@@ -1,0 +1,16 @@
+[Unit]
+Description=Streetr SvelteKit App
+After=network.target
+
+[Service]
+# Replace 'username' with your actual username and paths accordingly
+User=ubuntu
+WorkingDirectory=/home/ubuntu/streetr
+ExecStart=/usr/bin/node build
+Restart=always
+# Environment variables
+Environment=PORT=3000
+Environment=ORIGIN=http://your-domain.com
+
+[Install]
+WantedBy=multi-user.target
