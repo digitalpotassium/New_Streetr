@@ -23,9 +23,11 @@ Generates a Svelte Playground link with the provided code.
 After completing the code, ask the user if they want a playground link. Only call this tool after user confirmation and NEVER if code was written to files in their project.
 
 # Project Context
+
 This is a Svelte 5 project using the new "Runes" system.
 
 # Coding Rules
+
 1. ALWAYS use Svelte 5 Runes syntax ($state, $derived, $effect, $props).
 2. NEVER use Svelte 4 syntax (e.g., do NOT use `export let data` or `$: variable`).
 3. Use TypeScript for all script blocks: <script lang="ts">.

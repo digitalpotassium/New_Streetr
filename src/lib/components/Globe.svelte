@@ -1,59 +1,76 @@
 <script lang="ts">
-	import { onMount } from 'svelte';
+	import { onMount, tick } from 'svelte';
 	import createGlobe from 'cobe';
 
 	let canvas: HTMLCanvasElement;
 	let phi = 0;
+	let width = 0;
 
 	onMount(() => {
-		let width = 0;
+		let globe: { destroy: () => void } | undefined;
+		let resizeTimeout: NodeJS.Timeout;
+
+		const initGlobe = async () => {
+			if (!canvas) return;
+
+			// Ensure width is set in DOM before creating globe
+			const size = Math.max(window.innerWidth, window.innerHeight) * 1.3;
+			width = size;
+			await tick();
+
+			if (globe) {
+				globe.destroy();
+			}
+
+			let lastTime = performance.now();
+
+			globe = createGlobe(canvas, {
+				devicePixelRatio: Math.min(window.devicePixelRatio, 2),
+				width: size * 2,
+				height: size * 2,
+				phi: 0,
+				theta: 0.3, // Tilt it slightly for better look
+				dark: 1,
+				diffuse: 1.2,
+				mapSamples: 12000,
+				mapBrightness: 8, // Increased brightness
+				baseColor: [0.4, 0.4, 0.4], // Slightly brighter base
+				markerColor: [0.1, 0.8, 1],
+				glowColor: [0.2, 0.2, 0.2], // Brighter glow
+				markers: [],
+				onRender: (state) => {
+					const now = performance.now();
+					const delta = now - lastTime;
+					lastTime = now;
+					state.phi = phi;
+					phi += 0.0001 * delta;
+				}
+			});
+		};
 
 		const onResize = () => {
-             // Check if canvas exists to avoid errors on quick unmounts
-             if (canvas) {
-                 width = canvas.offsetWidth;
-             }
-        };
-		window.addEventListener('resize', onResize);
-		onResize();
+			// Debounce resize to prevent flashing/performance issues
+			clearTimeout(resizeTimeout);
+			resizeTimeout = setTimeout(initGlobe, 100);
+		};
 
-		const globe = createGlobe(canvas, {
-			devicePixelRatio: 2,
-			width: width * 2,
-			height: width * 2,
-			phi: 0,
-			theta: 0,
-			dark: 1,
-			diffuse: 1.2,
-			mapSamples: 16000,
-			mapBrightness: 6,
-			baseColor: [0.3, 0.3, 0.3],
-			markerColor: [0.1, 0.8, 1],
-			glowColor: [0.1, 0.1, 0.1],
-			markers: [
-				// Example markers (optional)
-				// { location: [37.7595, -122.4367], size: 0.03 },
-				// { location: [40.7128, -74.006], size: 0.03 }
-			],
-			onRender: (state) => {
-				// Called on every animation frame.
-				// state.phi = phi
-				state.phi = phi;
-				phi += 0.005;
-			}
-		});
+		window.addEventListener('resize', onResize);
+
+		// Initial load
+		initGlobe();
 
 		return () => {
-            globe.destroy();
-            window.removeEventListener('resize', onResize);
-        };
+			if (globe) globe.destroy();
+			window.removeEventListener('resize', onResize);
+			clearTimeout(resizeTimeout);
+		};
 	});
 </script>
 
-<div class="relative flex w-full max-w-[600px] items-center justify-center aspect-square mx-auto">
+<div class="fixed inset-0 z-0 flex items-center justify-center overflow-hidden pointer-events-none">
 	<canvas
 		bind:this={canvas}
-		style="width: 100%; height: 100%;"
-        class="opacity-90 hover:opacity-100 transition-opacity duration-500"
+		style="width: {width}px; height: {width}px; max-width: none;"
+		class="opacity-40 transition-opacity duration-1000 ease-in-out"
 	></canvas>
 </div>
